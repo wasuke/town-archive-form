@@ -138,7 +138,7 @@ async function uploadFiles(inputId, prefix, eventId) {
     const safe = sanitizeFilename(file.name);
     const path = `${prefix}/${eventId}/${Date.now()}_${safe}`;
 
-    const { error } = await lient.storage
+    const { error } = await .storage
       .from(BUCKET)
       .upload(path, file, { upsert: false });
 
@@ -165,7 +165,7 @@ async function saveToDB(data) {
     privacy: data.provenance.privacy
   };
 
-  const { error } = await lient.from(TABLE).insert(row);
+  const { error } = await supabaseClient.from(TABLE).insert(row);
   if (error) throw new Error(`DB insert failed: ${error.message}`);
 }
 
