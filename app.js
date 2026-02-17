@@ -137,7 +137,7 @@ async function uploadFiles(inputId, prefix, eventId) {
     const safe = sanitizeFilename(file.name);
     const path = `${prefix}/${eventId}/${Date.now()}_${safe}`;
 
-    const { error } = await supabase.storage
+    const { error } = await supabaseClient.storage
       .from(BUCKET)
       .upload(path, file, { upsert: false });
 
@@ -164,7 +164,7 @@ async function saveToDB(data) {
     privacy: data.provenance.privacy
   };
 
-  const { error } = await supabase.from(TABLE).insert(row);
+  const { error } = await supabaseClient.from(TABLE).insert(row);
   if (error) throw new Error(`DB insert failed: ${error.message}`);
 }
 
@@ -285,7 +285,7 @@ function initSubmit() {
       // 2) DBへ保存
       await saveToDB(data);
 
-      setStatus("保存成功（Supabaseに保存しました）", "ok");
+      setStatus("保存成功（supabaseClientに保存しました）", "ok");
 
       try { localStorage.setItem("town_experience_last_json", JSON.stringify(data)); } catch (_) {}
     } catch (err) {
