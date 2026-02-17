@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>まち体験エンジン・旅行者記録フォーム（プロトタイプナラティブ素材）</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+
+<body>
+<header>
+  <h1>まち体験エンジン・旅行者記録フォーム</h1>
+  <p class="lead">目的は観光レポートではなく、都市経験の「観測ログ」を集めてプロトタイプナラティブ素材にすることです。入力は雑でも保存し、後でAIや研究室側で補正・統合します。</p>
+</header>
+
+<main>
+  <form id="eventForm" class="grid" autocomplete="on">
+    <section class="card">
+      <h2>基本情報</h2>
+      <div class="row">
+        <div>
+          <label for="title">短いタイトル<span class="req">必須</span></label>
+          <input id="title" name="title" type="text" placeholder="例：夜の屋台通りでおでんを食べた" required />
+          <div class="hint">後から探す時の目印です。10〜30文字程度が扱いやすいです。</div>
+        </div>
+
+        <div class="row two">
+          <div>
+            <label for="startAt">開始日時<span class="req">必須</span></label>
+            <input id="startAt" name="startAt" type="datetime-local" required />
+            <div class="hint">正確でなくても構いません。</div>
+          </div>
+          <div>
+            <label for="endAt">終了日時</label>
+            <input id="endAt" name="endAt" type="datetime-local" />
+            <div class="hint">不明なら空欄で構いません。</div>
+          </div>
+        </div>
+
+        <div class="row two">
+          <div>
+            <label for="eventType">イベント種別</label>
+            <select id="eventType" name="eventType">
+              <option value="">未選択</option>
+              <option value="festival">祭り・行事</option>
+              <option value="market">市場・商店街</option>
+              <option value="food">飲食・屋台</option>
+              <option value="exhibition">展示・文化施設</option>
+              <option value="nature">自然・景観</option>
+              <option value="transport">交通・移動体験</option>
+              <option value="daily">日常風景</option>
+              <option value="other">その他</option>
+            </select>
+          </div>
+          <div>
+            <label for="mode">体験モード</label>
+            <select id="mode" name="mode">
+              <option value="">未選択</option>
+              <option value="tourism">観光</option>
+              <option value="study">学習・調査</option>
+              <option value="story">物語</option>
+              <option value="accessibility">アクセシビリティ視点</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label for="whatHappened">何があった（短文）<span class="req">必須</span></label>
+          <textarea id="whatHappened" name="whatHappened" placeholder="例：屋台の明かりに引き寄せられて、熱い汁物を買い、立ったまま食べた。" required></textarea>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>場所</h2>
+      <div class="row">
+        <div>
+          <label for="placeName">場所名（自由記述）<span class="req">必須</span></label>
+          <input id="placeName" name="placeName" type="text" placeholder="例：札幌市中央区 狸小路商店街 付近" required />
+        </div>
+
+        <div class="row two">
+          <div>
+            <label for="lat">緯度</label>
+            <input id="lat" name="lat" type="number" step="0.000001" placeholder="例：43.055000" />
+          </div>
+          <div>
+            <label for="lon">経度</label>
+            <input id="lon" name="lon" type="number" step="0.000001" placeholder="例：141.351000" />
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="button" id="btnGeo">現在地を取得</button>
+          <button type="button" id="btnMap" class="ghost">地図リンクを開く</button>
+          <span id="geoStatus" class="status">未取得</span>
+        </div>
+        <div class="hint">「現在地を取得」は端末の位置情報を使います。地図リンクはOpenStreetMapを別タブで開くだけです。</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>登場主体</h2>
+      <div class="row">
+        <div>
+          <label>誰がいた（選択）</label>
+          <div class="chips" aria-label="actors">
+            <label class="chip"><input type="checkbox" name="actors" value="local_resident" />地元の人</label>
+            <label class="chip"><input type="checkbox" name="actors" value="tourist" />観光客</label>
+            <label class="chip"><input type="checkbox" name="actors" value="vendor" />店主・屋台</label>
+            <label class="chip"><input type="checkbox" name="actors" value="staff" />スタッフ</label>
+            <label class="chip"><input type="checkbox" name="actors" value="family" />家族連れ</label>
+            <label class="chip"><input type="checkbox" name="actors" value="student" />学生</label>
+            <label class="chip"><input type="checkbox" name="actors" value="child" />子ども</label>
+            <label class="chip"><input type="checkbox" name="actors" value="elderly" />高齢者</label>
+            <label class="chip"><input type="checkbox" name="actors" value="other" />その他</label>
+          </div>
+        </div>
+        <div>
+          <label for="actorsNote">誰がいた（自由記述）</label>
+          <textarea id="actorsNote" name="actorsNote" placeholder="例：店主は中年男性で、客は仕事帰りの人が多かった。"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>行為</h2>
+      <div class="row">
+        <div>
+          <label>何をした（動詞タグ）</label>
+          <div class="chips" aria-label="actions">
+            <label class="chip"><input type="checkbox" name="actions" value="walk" />歩く</label>
+            <label class="chip"><input type="checkbox" name="actions" value="watch" />見る</label>
+            <label class="chip"><input type="checkbox" name="actions" value="listen" />聞く</label>
+            <label class="chip"><input type="checkbox" name="actions" value="eat" />食べる</label>
+            <label class="chip"><input type="checkbox" name="actions" value="buy" />買う</label>
+            <label class="chip"><input type="checkbox" name="actions" value="wait" />待つ</label>
+            <label class="chip"><input type="checkbox" name="actions" value="talk" />話す</label>
+            <label class="chip"><input type="checkbox" name="actions" value="take_photo" />撮る</label>
+            <label class="chip"><input type="checkbox" name="actions" value="touch" />触る</label>
+            <label class="chip"><input type="checkbox" name="actions" value="ride" />乗る</label>
+          </div>
+          <div class="hint">最低1つは選ぶと後工程の統合が楽になります。</div>
+        </div>
+
+        <div class="row two">
+          <div>
+            <label for="stayMin">滞在時間（分）</label>
+            <input id="stayMin" name="stayMin" type="number" min="0" step="1" placeholder="例：25" />
+          </div>
+          <div>
+            <label for="crowd">混雑度</label>
+            <select id="crowd" name="crowd">
+              <option value="">未選択</option>
+              <option value="low">少ない</option>
+              <option value="mid">普通</option>
+              <option value="high">多い</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>環境と雰囲気（感覚素材）</h2>
+      <div class="row">
+        <div class="row two">
+          <div>
+            <label for="weather">天候</label>
+            <select id="weather" name="weather">
+              <option value="">未選択</option>
+              <option value="sunny">晴</option>
+              <option value="cloudy">曇</option>
+              <option value="rain">雨</option>
+              <option value="snow">雪</option>
+              <option value="windy">風</option>
+              <option value="other">その他</option>
+            </select>
+          </div>
+          <div>
+            <label for="tempFeel">体感温度</label>
+            <select id="tempFeel" name="tempFeel">
+              <option value="">未選択</option>
+              <option value="cold">寒い</option>
+              <option value="cool">涼しい</option>
+              <option value="neutral">普通</option>
+              <option value="warm">暖かい</option>
+              <option value="hot">暑い</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label>音の種類（複数可）</label>
+          <div class="chips" aria-label="sound">
+            <label class="chip"><input type="checkbox" name="soundTags" value="voices" />人声</label>
+            <label class="chip"><input type="checkbox" name="soundTags" value="music" />音楽</label>
+            <label class="chip"><input type="checkbox" name="soundTags" value="vendor_call" />呼び込み</label>
+            <label class="chip"><input type="checkbox" name="soundTags" value="traffic" />車・交通</label>
+            <label class="chip"><input type="checkbox" name="soundTags" value="nature" />風・水・鳥</label>
+            <label class="chip"><input type="checkbox" name="soundTags" value="silence" />静けさ</label>
+          </div>
+        </div>
+
+        <div>
+          <label>匂い（複数可）</label>
+          <div class="chips" aria-label="smell">
+            <label class="chip"><input type="checkbox" name="smellTags" value="food" />食べ物</label>
+            <label class="chip"><input type="checkbox" name="smellTags" value="soil" />土・草</label>
+            <label class="chip"><input type="checkbox" name="smellTags" value="sea" />海</label>
+            <label class="chip"><input type="checkbox" name="smellTags" value="exhaust" />排気</label>
+            <label class="chip"><input type="checkbox" name="smellTags" value="incense" />線香・香</label>
+            <label class="chip"><input type="checkbox" name="smellTags" value="none" />特になし</label>
+          </div>
+        </div>
+
+        <div class="row two">
+          <div>
+            <label for="light">光環境</label>
+            <select id="light" name="light">
+              <option value="">未選択</option>
+              <option value="day">日中光</option>
+              <option value="dusk">夕方</option>
+              <option value="night_neon">夜・ネオン</option>
+              <option value="indoor">屋内照明</option>
+              <option value="backlit">逆光</option>
+            </select>
+          </div>
+          <div>
+            <label for="mood">雰囲気</label>
+            <select id="mood" name="mood">
+              <option value="">未選択</option>
+              <option value="lively">賑やか</option>
+              <option value="calm">落ち着いた</option>
+              <option value="tense">緊張感</option>
+              <option value="festive">祝祭感</option>
+              <option value="mysterious">不思議</option>
+              <option value="warm_contrast">寒い中で温かい</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label for="envNote">補足メモ（環境）</label>
+          <textarea id="envNote" name="envNote" placeholder="例：湯気が立ち、屋台だけ暖色で明るかった。雪で足音が吸われていた。"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>ナラティブの種（変化・前後関係）</h2>
+      <div class="row">
+        <div class="row two">
+          <div>
+            <label for="expectation">事前の予想</label>
+            <textarea id="expectation" name="expectation" placeholder="例：観光客向けで値段が高いと思っていた。"></textarea>
+          </div>
+          <div>
+            <label for="surprise">予想と違ったこと</label>
+            <textarea id="surprise" name="surprise" placeholder="例：地元の人が多く、会話が静かで落ち着いていた。"></textarea>
+          </div>
+        </div>
+
+        <div class="row two">
+          <div>
+            <label for="turningPoint">印象が変わった瞬間</label>
+            <textarea id="turningPoint" name="turningPoint" placeholder="例：店主が「寒いね」と声をかけてくれて緊張が解けた。"></textarea>
+          </div>
+          <div>
+            <label for="afterFeeling">最後にどう感じたか</label>
+            <textarea id="afterFeeling" name="afterFeeling" placeholder="例：観光地というより生活の場に入れた感覚が残った。"></textarea>
+          </div>
+        </div>
+
+        <div class="row two">
+          <div>
+            <label for="beforeAfter">前と後で変わったこと</label>
+            <textarea id="beforeAfter" name="beforeAfter" placeholder="例：最初は冷えていたが、食べ物と会話で体の感覚が変わった。"></textarea>
+          </div>
+          <div>
+            <label for="comparison">比較対象（自分の地元など）</label>
+            <textarea id="comparison" name="comparison" placeholder="例：地元の屋台は騒がしいが、ここは静かな距離感がある。"></textarea>
+          </div>
+        </div>
+
+        <div class="row two">
+          <div>
+            <label for="wantReturn">再訪したいか</label>
+            <select id="wantReturn" name="wantReturn">
+              <option value="">未選択</option>
+              <option value="yes">したい</option>
+              <option value="maybe">どちらとも言えない</option>
+              <option value="no">しない</option>
+            </select>
+          </div>
+          <div>
+            <label for="keywords">キーワード（任意）</label>
+            <input id="keywords" name="keywords" type="text" placeholder="例：屋台, 湯気, 夕方, 距離感, 生活" />
+            <div class="hint">カンマ区切りで入力できます。</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>証拠（素材）</h2>
+      <div class="row">
+        <div class="row two">
+          <div>
+            <label for="photos">写真</label>
+            <input id="photos" name="photos" type="file" accept="image/*" multiple />
+            <div class="hint">最低1枚あると強いです。</div>
+          </div>
+          <div>
+            <label for="videos">動画</label>
+            <input id="videos" name="videos" type="file" accept="video/*" multiple />
+            <div class="hint">10〜30秒の短片が扱いやすいです。</div>
+          </div>
+        </div>
+
+        <div class="row two">
+          <div>
+            <label for="audios">環境音</label>
+            <input id="audios" name="audios" type="file" accept="audio/*" multiple />
+            <div class="hint">10秒でも十分に意味が出ます。</div>
+          </div>
+          <div>
+            <label for="docs">パンフ・チケット等</label>
+            <input id="docs" name="docs" type="file" accept="image/*,application/pdf" multiple />
+          </div>
+        </div>
+
+        <div>
+          <label for="evidenceNote">証拠メモ</label>
+          <textarea id="evidenceNote" name="evidenceNote" placeholder="例：屋台の写真は正面から、音は通りの中央で録音。"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>信頼度と公開</h2>
+      <div class="row">
+        <div class="row two">
+          <div>
+            <label for="sourceType">情報の出典</label>
+            <select id="sourceType" name="sourceType">
+              <option value="">未選択</option>
+              <option value="direct">自分が直接体験</option>
+              <option value="withOthers">同行者と体験</option>
+              <option value="heard">他者から聞いた</option>
+              <option value="mixed">混在</option>
+            </select>
+          </div>
+          <div>
+            <label for="confidence">自信度</label>
+            <select id="confidence" name="confidence">
+              <option value="">未選択</option>
+              <option value="sure">確か</option>
+              <option value="rough">だいたい</option>
+              <option value="guess">推測</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row two">
+          <div>
+            <label for="privacy">公開可否</label>
+            <select id="privacy" name="privacy">
+              <option value="">未選択</option>
+              <option value="public">公開可</option>
+              <option value="internal">学内のみ</option>
+              <option value="private">非公開</option>
+            </select>
+          </div>
+          <div>
+            <label for="nameOrId">記録者（任意）</label>
+            <input id="nameOrId" name="nameOrId" type="text" placeholder="例：学籍番号下4桁、ニックネーム等" />
+          </div>
+        </div>
+
+        <div>
+          <label for="notes">補足（任意）</label>
+          <textarea id="notes" name="notes" placeholder="例：撮影許可が微妙な場所だったので動画は短くした。"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" style="grid-column: 1 / -1;">
+      <h2>出力と送信</h2>
+      <div class="row">
+        <div class="actions">
+          <button type="submit" class="primary" id="btnSubmit">JSONを生成して保存</button>
+          <button type="button" id="btnDownload">JSONをダウンロード</button>
+          <button type="button" id="btnClear" class="ghost">入力をクリア</button>
+          <span class="mini">ショートカット：<span class="kbd">Ctrl</span>+<span class="kbd">Enter</span>で生成</span>
+        </div>
+        <div id="submitStatus" class="status warn">まだ生成していません。ここにJSONが表示されます。</div>
+        <pre id="jsonPreview" class="mono" aria-label="json preview">{}</pre>
+        <div class="hint">このページはSupabaseへ保存します。写真等はStorage、JSONはDBへ入ります。</div>
+      </div>
+    </section>
+  </form>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./app.js"></script>
+</body>
+</html>
