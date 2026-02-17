@@ -1,8 +1,8 @@
-// ここを必ず自分の値に置き換える
-const SUPABASE_URL = "https://xxxxx.supabase.co";
-const SUPABASE_ANON_KEY = "YOUR_ANON_PUBLIC_KEY";
+// このURL及びキーは2026稚内実験用です
+const SUPABASE_URL = "https://cwjxfwizoucgfaypiyas.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN3anhmd2l6b3VjZ2ZheXBpeWFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEzMjc2NjAsImV4cCI6MjA4NjkwMzY2MH0.YvzznVStYbwdmP1J6ZCIq3I4qKCHrK_jQbCXu6fhlKI";
 
-// Supabase保存先（あなたの設定に合わせる）
+// Supabase保存先
 const BUCKET = "uploads";   // Storageのバケット名
 const TABLE = "events";     // DBのテーブル名
 
