@@ -102,7 +102,8 @@ function buildJSON() {
       confidence: $("confidence").value || null,
       privacy: $("privacy").value || null,
       recorder: $("nameOrId").value.trim() || null,
-      notes: $("notes").value.trim() || null
+      notes: $("notes").value.trim() || null,
+      affiliation: $("affiliation").value.trim() || null
     },
     created_at: new Date().toISOString()
   };
@@ -266,33 +267,48 @@ function initShortcut() {
 function initSubmit() {
   $("eventForm").addEventListener("submit", async (e) => {
     e.preventDefault();
-
+  
+    // 連打抑止（クールダウン中は弾く）
+    if (Date.now() < cooldownUntil) {
+      setStatus("クールダウン中です。少し待ってから送信してください。", "warn");
+      return;
+    }
+  
+    // 所属大学チェック（完全一致）
+    const aff = $("affiliation").value.trim();
+    if (aff !== "中部大学") {
+      setStatus("所属大学が一致しないため送信できません。「中部大学」と入力してください。", "warn");
+      return;
+    }
+  
     disableSubmit(true);
     setStatus("保存中…（ファイル→DBの順で処理します）", "warn");
-
+  
     try {
       const data = buildJSON();
       updatePreview(data);
-
-      // 1) Storageへアップロード（失敗したらDBへ入れない）
+  
       data.evidence.photos = await uploadFiles("photos", "photos", data.event_id);
       data.evidence.videos = await uploadFiles("videos", "videos", data.event_id);
       data.evidence.audios = await uploadFiles("audios", "audios", data.event_id);
       data.evidence.docs   = await uploadFiles("docs",   "docs",   data.event_id);
-
+  
       updatePreview(data);
-
-      // 2) DBへ保存
+  
       await saveToDB(data);
-
-      setStatus("保存成功（supabaseに保存しました）", "ok");
-
+  
+      setStatus("保存成功（Supabaseに保存しました）", "ok");
+  
+      // 成功時のみクールダウン開始（10秒）
+      startCooldown(10);
+  
       try { localStorage.setItem("town_experience_last_json", JSON.stringify(data)); } catch (_) {}
     } catch (err) {
       setStatus(`保存失敗：${err.message}`, "warn");
       console.error(err);
     } finally {
-      disableSubmit(false);
+      // クールダウン表示を優先したいので、ここでは有効化しない
+      if (Date.now() >= cooldownUntil) disableSubmit(false);
     }
   });
 }
