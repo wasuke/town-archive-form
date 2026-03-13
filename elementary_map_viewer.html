@@ -958,6 +958,7 @@
             eventId: payload?.event_id || "",
             createdAt: row.created_at || payload?.created_at || ""
           }, images.length));
+          console.log("records:", data?.length, "images:", images.length, "gallery:", galleryItems.length);
         });
       }
 
