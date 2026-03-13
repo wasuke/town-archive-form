@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>小学生用 絵地図ビューア</title>
+  <style>
+    :root {
+      --bg: #f7f8fc;
+      --panel: #ffffff;
+      --line: #d8deee;
+      --text: #1e2430;
+      --muted: #667085;
+      --accent: #3b82f6;
+      --accent-2: #1d4ed8;
+      --warn: #b45309;
+      --ok: #166534;
+      --danger: #b91c1c;
+      --shadow: 0 10px 30px rgba(31, 41, 55, 0.08);
+      --radius: 18px;
+      --map-w: 1123;
+      --map-h: 794;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif; }
+    button, input, select, textarea { font: inherit; }
+    button { cursor: pointer; }
+    [hidden] { display: none !important; }
+
+    body {
+      min-height: 100vh;
+    }
+
+    .app {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    .hero {
+      margin-bottom: 12px;
+      padding: 14px 18px;
+      background: linear-gradient(180deg, #ffffff, #f4f7ff);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .hero h1 {
+      margin: 0 0 4px;
+      font-size: 22px;
+    }
+
+    .hero p {
+      margin: 0;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .cardInner {
+      padding: 16px;
+    }
+
+    .gridTeacher {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 14px;
+    }
+
+    @media (max-width: 980px) {
+      .gridTeacher {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .field {
+      margin-bottom: 12px;
+    }
+
+    .field label {
+      display: block;
+      font-weight: 700;
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+
+    .field .hint {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .field input[type="text"],
+    .field input[type="password"],
+    .field textarea,
+    .field select {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 14px;
+      padding: 12px 13px;
+      outline: none;
+    }
+
+    .field textarea {
+      min-height: 112px;
+      resize: vertical;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .btn {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--text);
+      border-radius: 14px;
+      padding: 10px 14px;
+      font-weight: 700;
+      min-height: 44px;
+    }
+
+    .btn.primary {
+      background: linear-gradient(180deg, var(--accent), var(--accent-2));
+      color: #fff;
+      border-color: transparent;
+    }
+
+    .btn.danger {
+      color: var(--danger);
+    }
+
+    .status {
+      margin-top: 12px;
+      border: 1px dashed var(--line);
+      border-radius: 14px;
+      padding: 10px 12px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--muted);
+      background: #fbfcff;
+      white-space: pre-wrap;
+    }
+
+    .status.ok { color: var(--ok); border-color: rgba(22, 101, 52, 0.28); background: rgba(22, 101, 52, 0.05); }
+    .status.warn { color: var(--warn); border-color: rgba(180, 83, 9, 0.28); background: rgba(180, 83, 9, 0.05); }
+    .status.error { color: var(--danger); border-color: rgba(185, 28, 28, 0.28); background: rgba(185, 28, 28, 0.05); }
+
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      word-break: break-all;
+    }
+
+    .teacherCols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    @media (max-width: 740px) {
+      .teacherCols {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .viewerLayout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 14px;
+      align-items: start;
+    }
+
+    @media (max-width: 1100px) {
+      .viewerLayout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .topBar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .topBar .meta {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .mapPanel, .sidePanel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .mapPanel {
+      overflow: hidden;
+    }
+
+    .mapTools {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      background: #fbfcff;
+    }
+
+    .mapTools .left,
+    .mapTools .right {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .seg {
+      display: inline-flex;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .seg button {
+      border: 0;
+      background: transparent;
+      padding: 10px 12px;
+      min-width: 54px;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .seg button.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .mapScroll {
+      overflow: auto;
+      padding: 12px;
+      background: #eef3ff;
+      touch-action: none;
+    }
+
+    .mapStage {
+      position: relative;
+      width: min(100%, calc(var(--map-w) * 1px));
+      aspect-ratio: 1123 / 794;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 10px;
+      border: 1px solid #cfd7ea;
+      overflow: hidden;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.5);
+    }
+
+    .mapStage img.baseMap {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      user-select: none;
+      pointer-events: none;
+      -webkit-user-drag: none;
+    }
+
+    .dropHint {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(255,255,255,0.9);
+      border: 1px dashed var(--line);
+      border-radius: 999px;
+      padding: 10px 16px;
+      font-size: 13px;
+      color: var(--muted);
+      pointer-events: none;
+    }
+
+    .placedItem {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      touch-action: none;
+      user-select: none;
+      cursor: grab;
+    }
+
+    .placedItem.active {
+      outline: 3px solid rgba(59,130,246,0.28);
+      border-radius: 14px;
+    }
+
+    .placedItem img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      border-radius: 14px;
+      border: 2px solid rgba(255,255,255,0.95);
+      box-shadow: 0 10px 18px rgba(0,0,0,0.18);
+      background: rgba(255,255,255,0.85);
+      pointer-events: none;
+    }
+
+    .placedItem .badge {
+      position: absolute;
+      right: 6px;
+      top: 6px;
+      min-width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      padding: 0 6px;
+      background: rgba(255,255,255,0.95);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      border: 1px solid rgba(0,0,0,0.08);
+      pointer-events: none;
+    }
+
+    .sidePanel {
+      padding: 14px;
+    }
+
+    .sidePanel h2 {
+      margin: 0 0 6px;
+      font-size: 17px;
+    }
+
+    .sidePanel .sub {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+
+    .thumbGrid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      max-height: calc(100vh - 260px);
+      overflow: auto;
+      padding-right: 2px;
+    }
+
+    @media (max-width: 1100px) {
+      .thumbGrid {
+        max-height: none;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      }
+    }
+
+    .thumb {
+      position: relative;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      overflow: hidden;
+      background: #fff;
+      padding: 8px;
+    }
+
+    .thumb img {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+      border-radius: 12px;
+      display: block;
+      user-select: none;
+      -webkit-user-drag: none;
+      touch-action: none;
+    }
+
+    .thumb .cap {
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.45;
+      margin-top: 6px;
+      min-height: 2.8em;
+      overflow: hidden;
+    }
+
+    .thumb .miniActions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .tiny {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 7px 10px;
+    }
+
+    .ghostDrag {
+      position: fixed;
+      width: 96px;
+      height: 96px;
+      border-radius: 16px;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 18px 30px rgba(0,0,0,0.25);
+      border: 3px solid rgba(255,255,255,0.95);
+      background: rgba(255,255,255,0.95);
+      object-fit: cover;
+      z-index: 9999;
+    }
+
+    .emptyBox {
+      border: 1px dashed var(--line);
+      border-radius: 16px;
+      padding: 16px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+      background: #fbfcff;
+    }
+
+    .kv {
+      display: grid;
+      grid-template-columns: 92px 1fr;
+      gap: 10px;
+      font-size: 13px;
+      line-height: 1.6;
+      margin-bottom: 8px;
+    }
+
+    .kv dt {
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .kv dd {
+      margin: 0;
+    }
+
+    .footerNote {
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <section class="hero">
+      <h1>小学生用 絵地図ビューア</h1>
+      <p>先生画面で白地図と event_name を設定すると、生徒用URLを生成します。生徒画面では、右の画像を地図に置いて、自分だけの絵地図をPNGで保存できます。</p>
+    </section>
+
+    <section id="teacherScreen" class="card">
+      <div class="cardInner gridTeacher">
+        <div>
+          <h2 style="margin:0 0 12px; font-size:18px;">先生画面</h2>
+          <div class="teacherCols">
+            <div class="field">
+              <label for="teacherEventName">event_name</label>
+              <input id="teacherEventName" type="text" placeholder="例：飯地町まちあるき2026" />
+              <div class="hint">既存の記録フォームで保存された event_name と一致させます。</div>
+            </div>
+            <div class="field">
+              <label for="teacherBucket">Storage bucket</label>
+              <input id="teacherBucket" type="text" value="uploads" />
+              <div class="hint">画像素材が入っている bucket 名です。</div>
+            </div>
+          </div>
+          <div class="teacherCols">
+            <div class="field">
+              <label for="teacherAnonKey">Supabase anon key</label>
+              <textarea id="teacherAnonKey" placeholder="Supabase の anon key を貼り付けてください"></textarea>
+              <div class="hint">anon key は公開用キーです。秘密鍵ではありません。RLS をゆるくすると事故るので、鍵そのものよりポリシーが本体です。</div>
+            </div>
+            <div class="field">
+              <label for="teacherMapFile">A4横サイズ白地図 JPG</label>
+              <input id="teacherMapFile" type="file" accept="image/jpeg,image/jpg,image/png,image/webp" />
+              <div class="hint">ローカルファイルを選ぶと、この画面で Storage にアップロードして、その公開URLを生徒URLに埋め込みます。地図画像をあとで再利用するなら、画像もアーカイブ対象にしたほうが運用が整います。授業だけなら Storage に置くだけでも足ります。</div>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn primary" id="btnGenerateChildUrl">生徒用URLを生成</button>
+            <button class="btn" id="btnCopyChildUrl" type="button">URLをコピー</button>
+            <button class="btn danger" id="btnResetTeacher" type="button">先生画面をリセット</button>
+          </div>
+          <div class="field" style="margin-top:12px; margin-bottom:0;">
+            <label for="childUrl">生徒用URL</label>
+            <textarea id="childUrl" readonly placeholder="ここに生成されます"></textarea>
+          </div>
+          <div id="teacherStatus" class="status warn">event_name・anon key・白地図を入れて、生徒用URLを作ってください。</div>
+        </div>
+
+        <div>
+          <h2 style="margin:0 0 12px; font-size:18px;">この版の前提</h2>
+          <div class="emptyBox">
+            <dl class="kv">
+              <dt>記録取得</dt>
+              <dd>events テーブルから event_name 一致の行を読みます。</dd>
+              <dt>画像取得</dt>
+              <dd>payload.evidence.photos の path と bucket を読み、Storage の公開URLに変換します。</dd>
+              <dt>生徒画面</dt>
+              <dd>右の画像をドラッグ、またはタップで地図に追加できます。置いた後も動かせます。</dd>
+              <dt>書き出し</dt>
+              <dd>最終状態は PNG としてダウンロードします。</dd>
+            </dl>
+            <div class="footerNote">既存フォームは event_name をURLから受け取り、保存JSONの evidence.photos に Storage 情報を入れる構造です。viewer 側も events と payload.evidence.photos を読む構成になっていました。そこに素直に乗せています。</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="childScreen" hidden>
+      <div class="topBar">
+        <div>
+          <div style="font-size:22px; font-weight:800;">絵地図づくり</div>
+          <div class="meta">event_name：<span id="currentEventName">未設定</span></div>
+        </div>
+        <div class="actions">
+          <button class="btn" id="btnBackToTeacher" type="button">先生画面に戻る</button>
+          <button class="btn" id="btnRemoveSelected" type="button">選択画像を消す</button>
+          <button class="btn" id="btnClearPlaced" type="button">全部消す</button>
+          <button class="btn primary" id="btnDownloadPng" type="button">絵地図をPNGで保存</button>
+        </div>
+      </div>
+
+      <div class="viewerLayout">
+        <section class="mapPanel">
+          <div class="mapTools">
+            <div class="left">
+              <div class="seg" aria-label="size selector">
+                <button data-size="small" class="active" type="button">小</button>
+                <button data-size="medium" type="button">中</button>
+                <button data-size="large" type="button">大</button>
+              </div>
+              <div class="meta">今から置くサイズ：<strong id="currentSizeLabel">小</strong></div>
+            </div>
+            <div class="right">
+              <div class="meta">画像を右からドラッグ。タブレットではタップ追加も使えます。</div>
+            </div>
+          </div>
+          <div class="mapScroll" id="mapScroll">
+            <div class="mapStage" id="mapStage">
+              <img id="baseMapImage" class="baseMap" alt="白地図" />
+              <div id="dropHint" class="dropHint">ここに画像を置きます</div>
+            </div>
+          </div>
+        </section>
+
+        <aside class="sidePanel">
+          <h2>画像一覧</h2>
+          <div class="sub">記録フォームの evidence.photos から画像だけを集めています。タイトルは軽いメモとして付けています。</div>
+          <div id="thumbGrid" class="thumbGrid"></div>
+          <div id="childStatus" class="status warn" style="margin-top:12px;">読み込み前です。</div>
+        </aside>
+      </div>
+    </section>
+  </div>
+
+  <script type="module">
+    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+    const SUPABASE_URL = "https://cwjxfwizoucgfaypiyas.supabase.co";
+    const DEFAULT_BUCKET = "uploads";
+    const TABLE = "events";
+    const MAP_W = 1123;
+    const MAP_H = 794;
+    const SIZE_MAP = {
+      small: { w: 90, h: 90, label: "小" },
+      medium: { w: 138, h: 138, label: "中" },
+      large: { w: 192, h: 192, label: "大" }
+    };
+
+    let supabase = null;
+    let runtimeConfig = null;
+    let galleryItems = [];
+    let placedItems = [];
+    let selectedPlacedId = null;
+    let currentSize = "small";
+    let dragState = null;
+    let draggedPlaced = null;
+    let imageCache = new Map();
+
+    const $ = (id) => document.getElementById(id);
+
+    function setTeacherStatus(text, kind = "warn") {
+      const el = $("teacherStatus");
+      el.textContent = text;
+      el.className = `status ${kind}`;
+    }
+
+    function setChildStatus(text, kind = "warn") {
+      const el = $("childStatus");
+      el.textContent = text;
+      el.className = `status ${kind}`;
+    }
+
+    function escapeHtml(s) {
+      return String(s ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+
+    function parseRuntimeConfig() {
+      const raw = location.hash ? location.hash.slice(1) : (location.search ? location.search.slice(1) : "");
+      const params = new URLSearchParams(raw);
+      return {
+        eventName: (params.get("event_name") || "").trim(),
+        anonKey: (params.get("k") || "").trim(),
+        mapUrl: (params.get("map") || "").trim(),
+        bucket: (params.get("bucket") || DEFAULT_BUCKET).trim() || DEFAULT_BUCKET
+      };
+    }
+
+    function buildChildUrl({ eventName, anonKey, mapUrl, bucket }) {
+      const base = `${location.origin}${location.pathname}`;
+      const params = new URLSearchParams();
+      params.set("event_name", eventName);
+      params.set("k", anonKey);
+      params.set("map", mapUrl);
+      params.set("bucket", bucket || DEFAULT_BUCKET);
+      return `${base}#${params.toString()}`;
+    }
+
+    function setModeTeacher() {
+      $("teacherScreen").hidden = false;
+      $("childScreen").hidden = true;
+    }
+
+    function setModeChild() {
+      $("teacherScreen").hidden = true;
+      $("childScreen").hidden = false;
+      $("currentEventName").textContent = runtimeConfig?.eventName || "未設定";
+      $("currentSizeLabel").textContent = SIZE_MAP[currentSize].label;
+    }
+
+    function initSupabase(anonKey) {
+      if (!anonKey) {
+        throw new Error("anon key がありません。");
+      }
+      supabase = createClient(SUPABASE_URL, anonKey);
+    }
+
+    async function uploadMapFile(file, bucket, anonKey) {
+      initSupabase(anonKey);
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const path = `map_templates/${Date.now()}_${safeName}`;
+      const { error } = await supabase.storage.from(bucket).upload(path, file, { upsert: false });
+      if (error) throw new Error(`白地図アップロード失敗：${error.message}`);
+      const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+      if (!data?.publicUrl) throw new Error("白地図の公開URLを作れませんでした。");
+      return data.publicUrl;
+    }
+
+    async function preloadImage(url) {
+      if (imageCache.has(url)) return imageCache.get(url);
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.decoding = "async";
+      const promise = new Promise((resolve, reject) => {
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error(`画像読み込み失敗：${url}`));
+      });
+      img.src = url;
+      imageCache.set(url, promise);
+      return promise;
+    }
+
+    function getStageRect() {
+      return $("mapStage").getBoundingClientRect();
+    }
+
+    function clientToStagePoint(clientX, clientY) {
+      const rect = getStageRect();
+      return {
+        x: ((clientX - rect.left) / rect.width) * MAP_W,
+        y: ((clientY - rect.top) / rect.height) * MAP_H
+      };
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function fitPoint(x, y, sizeKey) {
+      const size = SIZE_MAP[sizeKey];
+      return {
+        x: clamp(x, size.w / 2, MAP_W - size.w / 2),
+        y: clamp(y, size.h / 2, MAP_H - size.h / 2)
+      };
+    }
+
+    function updateSizeButtons() {
+      document.querySelectorAll("[data-size]").forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.size === currentSize);
+      });
+      $("currentSizeLabel").textContent = SIZE_MAP[currentSize].label;
+    }
+
+    function selectPlaced(id) {
+      selectedPlacedId = id;
+      document.querySelectorAll(".placedItem").forEach((el) => {
+        el.classList.toggle("active", el.dataset.id === id);
+      });
+    }
+
+    function deselectPlaced() {
+      selectedPlacedId = null;
+      document.querySelectorAll(".placedItem").forEach((el) => el.classList.remove("active"));
+    }
+
+    function renderPlaced() {
+      const stage = $("mapStage");
+      stage.querySelectorAll(".placedItem").forEach((el) => el.remove());
+      $("dropHint").hidden = placedItems.length > 0;
+
+      for (const item of placedItems) {
+        const size = SIZE_MAP[item.size];
+        const wrap = document.createElement("div");
+        wrap.className = "placedItem";
+        wrap.dataset.id = item.id;
+        wrap.style.left = `${(item.x / MAP_W) * 100}%`;
+        wrap.style.top = `${(item.y / MAP_H) * 100}%`;
+        wrap.style.width = `${(size.w / MAP_W) * 100}%`;
+        wrap.style.height = `${(size.h / MAP_H) * 100}%`;
+
+        wrap.innerHTML = `
+          <img src="${escapeHtml(item.url)}" alt="${escapeHtml(item.title)}" draggable="false" />
+          <div class="badge">${SIZE_MAP[item.size].label}</div>
+        `;
+
+        wrap.addEventListener("pointerdown", (ev) => {
+          ev.stopPropagation();
+          wrap.setPointerCapture(ev.pointerId);
+          selectPlaced(item.id);
+          draggedPlaced = {
+            id: item.id,
+            pointerId: ev.pointerId,
+            dx: item.x - clientToStagePoint(ev.clientX, ev.clientY).x,
+            dy: item.y - clientToStagePoint(ev.clientX, ev.clientY).y
+          };
+        });
+
+        wrap.addEventListener("pointermove", (ev) => {
+          if (!draggedPlaced || draggedPlaced.pointerId !== ev.pointerId || draggedPlaced.id !== item.id) return;
+          const pt = clientToStagePoint(ev.clientX, ev.clientY);
+          const moved = fitPoint(pt.x + draggedPlaced.dx, pt.y + draggedPlaced.dy, item.size);
+          item.x = moved.x;
+          item.y = moved.y;
+          wrap.style.left = `${(item.x / MAP_W) * 100}%`;
+          wrap.style.top = `${(item.y / MAP_H) * 100}%`;
+        });
+
+        const clearMove = (ev) => {
+          if (draggedPlaced && draggedPlaced.pointerId === ev.pointerId && draggedPlaced.id === item.id) {
+            draggedPlaced = null;
+          }
+        };
+        wrap.addEventListener("pointerup", clearMove);
+        wrap.addEventListener("pointercancel", clearMove);
+
+        stage.appendChild(wrap);
+      }
+
+      if (selectedPlacedId) {
+        selectPlaced(selectedPlacedId);
+      }
+    }
+
+    function addPlacedFromGallery(gallery, stageX, stageY) {
+      const point = fitPoint(stageX, stageY, currentSize);
+      const item = {
+        id: `pl_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        galleryId: gallery.id,
+        url: gallery.url,
+        title: gallery.title,
+        size: currentSize,
+        x: point.x,
+        y: point.y
+      };
+      placedItems.push(item);
+      renderPlaced();
+      selectPlaced(item.id);
+      setChildStatus(`「${gallery.title || "画像"}」を地図に置きました。`, "ok");
+    }
+
+    function removeSelectedPlaced() {
+      if (!selectedPlacedId) {
+        setChildStatus("先に地図上の画像を選んでください。", "warn");
+        return;
+      }
+      placedItems = placedItems.filter((item) => item.id !== selectedPlacedId);
+      selectedPlacedId = null;
+      renderPlaced();
+      setChildStatus("選んだ画像を消しました。", "ok");
+    }
+
+    function clearPlaced() {
+      placedItems = [];
+      selectedPlacedId = null;
+      renderPlaced();
+      setChildStatus("地図上の画像を全部消しました。", "ok");
+    }
+
+    function makeGalleryItem(raw, index) {
+      const title = raw.title || raw.fileName || `画像 ${index + 1}`;
+      return {
+        id: `g_${index}_${Math.random().toString(36).slice(2, 7)}`,
+        url: raw.url,
+        title,
+        fileName: raw.fileName || "",
+        eventId: raw.eventId || "",
+        createdAt: raw.createdAt || ""
+      };
+    }
+
+    function renderGallery() {
+      const grid = $("thumbGrid");
+      grid.innerHTML = "";
+
+      if (!galleryItems.length) {
+        grid.innerHTML = `<div class="emptyBox" style="grid-column:1 / -1;">この event_name には画像がありません。記録フォームで写真を保存しているか、RLSで select が通るかを確認してください。</div>`;
+        return;
+      }
+
+      galleryItems.forEach((item) => {
+        const card = document.createElement("div");
+        card.className = "thumb";
+        card.innerHTML = `
+          <img src="${escapeHtml(item.url)}" alt="${escapeHtml(item.title)}" draggable="false" />
+          <div class="cap">${escapeHtml(item.title)}</div>
+          <div class="miniActions">
+            <button class="tiny" type="button">タップして追加</button>
+          </div>
+        `;
+
+        const img = card.querySelector("img");
+        const addBtn = card.querySelector("button");
+
+        addBtn.addEventListener("click", () => {
+          addPlacedFromGallery(item, MAP_W / 2, MAP_H / 2);
+        });
+
+        img.addEventListener("pointerdown", (ev) => {
+          ev.preventDefault();
+          startGhostDrag(ev, item);
+        });
+
+        grid.appendChild(card);
+      });
+    }
+
+    function startGhostDrag(ev, item) {
+      const ghost = document.createElement("img");
+      ghost.className = "ghostDrag";
+      ghost.src = item.url;
+      document.body.appendChild(ghost);
+
+      const moveGhost = (clientX, clientY) => {
+        ghost.style.left = `${clientX}px`;
+        ghost.style.top = `${clientY}px`;
+      };
+      moveGhost(ev.clientX, ev.clientY);
+
+      dragState = {
+        pointerId: ev.pointerId,
+        gallery: item,
+        ghost,
+        moveGhost
+      };
+
+      window.addEventListener("pointermove", onGhostDragMove, { passive: false });
+      window.addEventListener("pointerup", onGhostDragEnd, { passive: false });
+      window.addEventListener("pointercancel", onGhostDragEnd, { passive: false });
+    }
+
+    function onGhostDragMove(ev) {
+      if (!dragState || dragState.pointerId !== ev.pointerId) return;
+      ev.preventDefault();
+      dragState.moveGhost(ev.clientX, ev.clientY);
+    }
+
+    function onGhostDragEnd(ev) {
+      if (!dragState || dragState.pointerId !== ev.pointerId) return;
+      ev.preventDefault();
+      const { gallery, ghost } = dragState;
+      const rect = getStageRect();
+      if (ev.clientX >= rect.left && ev.clientX <= rect.right && ev.clientY >= rect.top && ev.clientY <= rect.bottom) {
+        const pt = clientToStagePoint(ev.clientX, ev.clientY);
+        addPlacedFromGallery(gallery, pt.x, pt.y);
+      }
+      ghost.remove();
+      dragState = null;
+      window.removeEventListener("pointermove", onGhostDragMove);
+      window.removeEventListener("pointerup", onGhostDragEnd);
+      window.removeEventListener("pointercancel", onGhostDragEnd);
+    }
+
+    async function loadGalleryFromSupabase() {
+      setChildStatus("画像を読み込んでいます…", "warn");
+
+      const { data, error } = await supabase
+        .from(TABLE)
+        .select("event_name, created_at, payload")
+        .eq("event_name", runtimeConfig.eventName)
+        .order("created_at", { ascending: true })
+        .limit(500);
+
+      if (error) {
+        throw new Error(`events 読み込み失敗：${error.message}`);
+      }
+
+      const images = [];
+      for (const row of data || []) {
+        const payload = row.payload || {};
+        const photos = Array.isArray(payload?.evidence?.photos) ? payload.evidence.photos : [];
+        photos.forEach((photo, idx) => {
+          const bucket = photo?.bucket || runtimeConfig.bucket || DEFAULT_BUCKET;
+          const path = photo?.path;
+          if (!path) return;
+          const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(path);
+          const url = urlData?.publicUrl;
+          if (!url) return;
+          images.push(makeGalleryItem({
+            url,
+            title: payload?.title || photo?.name || `画像 ${idx + 1}`,
+            fileName: photo?.name || "",
+            eventId: payload?.event_id || "",
+            createdAt: row.created_at || payload?.created_at || ""
+          }, images.length));
+        });
+      }
+
+      const dedup = new Map();
+      images.forEach((item) => {
+        if (!dedup.has(item.url)) dedup.set(item.url, item);
+      });
+      galleryItems = Array.from(dedup.values());
+      renderGallery();
+      setChildStatus(`${galleryItems.length}枚の画像を読み込みました。`, galleryItems.length ? "ok" : "warn");
+    }
+
+    async function downloadCompositionPng() {
+      if (!runtimeConfig?.mapUrl) {
+        setChildStatus("白地図URLがありません。先生画面から作り直してください。", "error");
+        return;
+      }
+
+      try {
+        setChildStatus("PNGを書き出しています…", "warn");
+        const canvas = document.createElement("canvas");
+        canvas.width = MAP_W;
+        canvas.height = MAP_H;
+        const ctx = canvas.getContext("2d");
+
+        const base = await preloadImage(runtimeConfig.mapUrl);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(base, 0, 0, canvas.width, canvas.height);
+
+        for (const item of placedItems) {
+          const img = await preloadImage(item.url);
+          const size = SIZE_MAP[item.size];
+          ctx.drawImage(img, item.x - size.w / 2, item.y - size.h / 2, size.w, size.h);
+        }
+
+        const a = document.createElement("a");
+        a.href = canvas.toDataURL("image/png");
+        a.download = `${(runtimeConfig.eventName || "map").replace(/[\\/:*?"<>|]/g, "_")}_my_map.png`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setChildStatus("PNGを保存しました。", "ok");
+      } catch (err) {
+        console.error(err);
+        setChildStatus(`PNG保存に失敗しました。${err.message}`, "error");
+      }
+    }
+
+    function setupTeacherScreen() {
+      $("btnGenerateChildUrl").addEventListener("click", async () => {
+        const eventName = $("teacherEventName").value.trim();
+        const anonKey = $("teacherAnonKey").value.trim();
+        const bucket = $("teacherBucket").value.trim() || DEFAULT_BUCKET;
+        const file = $("teacherMapFile").files?.[0];
+
+        if (!eventName) {
+          setTeacherStatus("event_name を入れてください。", "warn");
+          return;
+        }
+        if (!anonKey) {
+          setTeacherStatus("anon key を入れてください。", "warn");
+          return;
+        }
+        if (!file) {
+          setTeacherStatus("白地図画像を選んでください。", "warn");
+          return;
+        }
+
+        try {
+          setTeacherStatus("白地図をアップロードして、生徒用URLを作っています…", "warn");
+          const mapUrl = await uploadMapFile(file, bucket, anonKey);
+          const url = buildChildUrl({ eventName, anonKey, mapUrl, bucket });
+          $("childUrl").value = url;
+          setTeacherStatus("生徒用URLを生成しました。", "ok");
+        } catch (err) {
+          console.error(err);
+          setTeacherStatus(err.message || "URL生成に失敗しました。", "error");
+        }
+      });
+
+      $("btnCopyChildUrl").addEventListener("click", async () => {
+        const text = $("childUrl").value.trim();
+        if (!text) {
+          setTeacherStatus("先にURLを生成してください。", "warn");
+          return;
+        }
+        try {
+          await navigator.clipboard.writeText(text);
+          setTeacherStatus("URLをコピーしました。", "ok");
+        } catch {
+          setTeacherStatus("コピーに失敗しました。手動でコピーしてください。", "warn");
+        }
+      });
+
+      $("btnResetTeacher").addEventListener("click", () => {
+        $("teacherEventName").value = "";
+        $("teacherAnonKey").value = "";
+        $("teacherBucket").value = DEFAULT_BUCKET;
+        $("teacherMapFile").value = "";
+        $("childUrl").value = "";
+        setTeacherStatus("先生画面をリセットしました。", "ok");
+      });
+    }
+
+    function setupChildUi() {
+      document.querySelectorAll("[data-size]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          currentSize = btn.dataset.size;
+          updateSizeButtons();
+          setChildStatus(`置くサイズを「${SIZE_MAP[currentSize].label}」にしました。`, "ok");
+        });
+      });
+
+      $("btnRemoveSelected").addEventListener("click", removeSelectedPlaced);
+      $("btnClearPlaced").addEventListener("click", clearPlaced);
+      $("btnDownloadPng").addEventListener("click", downloadCompositionPng);
+      $("btnBackToTeacher").addEventListener("click", () => {
+        history.replaceState(null, "", location.pathname);
+        runtimeConfig = null;
+        galleryItems = [];
+        placedItems = [];
+        selectedPlacedId = null;
+        renderPlaced();
+        setModeTeacher();
+      });
+
+      $("mapStage").addEventListener("pointerdown", (ev) => {
+        if (ev.target.id === "mapStage" || ev.target.id === "baseMapImage" || ev.target.id === "dropHint") {
+          deselectPlaced();
+        }
+      });
+    }
+
+    async function bootChildMode() {
+      runtimeConfig = parseRuntimeConfig();
+      if (!runtimeConfig.eventName || !runtimeConfig.anonKey || !runtimeConfig.mapUrl) {
+        setModeTeacher();
+        return;
+      }
+
+      try {
+        initSupabase(runtimeConfig.anonKey);
+        $("baseMapImage").src = runtimeConfig.mapUrl;
+        await preloadImage(runtimeConfig.mapUrl);
+        setModeChild();
+        await loadGalleryFromSupabase();
+        renderPlaced();
+      } catch (err) {
+        console.error(err);
+        setModeTeacher();
+        setTeacherStatus(`生徒画面の起動に失敗しました。${err.message}`, "error");
+      }
+    }
+
+    window.addEventListener("DOMContentLoaded", async () => {
+      setupTeacherScreen();
+      setupChildUi();
+      updateSizeButtons();
+      await bootChildMode();
+    });
+  </script>
+</body>
+</html>
