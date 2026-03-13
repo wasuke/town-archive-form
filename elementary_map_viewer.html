@@ -934,7 +934,7 @@
         .select("event_name, created_at, payload")
         .eq("event_name", runtimeConfig.eventName)
         .order("created_at", { ascending: true })
-        .limit(500);
+        .limit(5000);
 
       if (error) {
         throw new Error(`events 読み込み失敗：${error.message}`);
